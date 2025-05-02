@@ -20,23 +20,13 @@ async function createTodo(todo) {
     return result.id;
 }
 
-async function updateTodoByContent(content, newContent) {
-    const { data, error } = await supabase
-        .from('todos')
-        .select('*')
-        .ilike('description', `%${content}%`);
-    if (error || !data?.length) {
-        throw new Error('No todo found with matching content');
-    }
-    const todo = data[0];
-    const { error: updateError } = await supabase
-        .from('todos')
-        .update({ description: newContent })
-        .eq('id', todo.id);
-    if (updateError) {
-        throw new Error('Failed to update todo');
-    }
-    return { message: `Todo updated from "${content}" to "${newContent}"` };
+async function updateTodoByContent({ oldContent, newContent }) {
+    const [result] = await db
+        .update(todosTable)
+        .set({ todo: newContent, updated_at: new Date() })
+        .where(ilike(todosTable.todo, `%${oldContent}%`))
+        .returning({ id: todosTable.id });
+    return result ? result.id : null;
 }
 
 async function deleteTodoById(id) {
@@ -79,6 +69,7 @@ Available Tools:
 - createTodo(todo: string): Creates a new todo in the Database and takes todo as a string and returns the ID of created todo.
 - deleteTodoById(id: string): Deletes a todo by its ID from the Database.
 - searchTodos(query: string): Searches for all todos matching the query string using ilike operator in Database.
+- updateTodoByContent(oldContent: string, newContent: string): Updates a todo by its content in the Database and takes oldContent and newContent as strings.
 
 Example:
 START
